@@ -28,7 +28,7 @@ const MSAL_CONFIG = {
     // Microsoft's own "Graph Explorer" public client ID.
     // Works for any org. No Azure app registration needed.
     clientId   : 'd3590ed6-52b3-4102-aeff-aad2292ab01c',
-    authority  : 'https://login.microsoftonline.com/common',
+    authority  : 'https://login.microsoftonline.com/accenture.com',
     redirectUri: window.location.href.split('?')[0]   // current page URL
   },
   cache: {
