@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulnerability Detail | SecureOps Portal</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+  <style>
+    .detail-header-card {
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .detail-header-card::after {
+      content: '';
+      position: absolute;
+      right: -20px; top: -20px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,180,255,0.08), transparent);
+    }
+    .detail-vuln-id {
+      font-size: 0.75rem;
+      color: var(--color-primary);
+      font-family: monospace;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .detail-vuln-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .detail-meta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .cvss-ring {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      border: 3px solid;
+      position: relative;
+    }
+    .cvss-ring .score { font-size: 1.2rem; font-weight: 800; line-height: 1; }
+    .cvss-ring .label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .cvss-ring.critical { border-color: var(--color-critical); color: var(--color-critical); }
+    .cvss-ring.high     { border-color: var(--color-high); color: var(--color-high); }
+    .cvss-ring.medium   { border-color: var(--color-medium); color: var(--color-medium); }
+    .cvss-ring.low      { border-color: var(--color-low); color: var(--color-low); }
+
+    .tag-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag { padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; background: rgba(0,180,255,0.1); border: 1px solid rgba(0,180,255,0.2); color: var(--color-primary); }
+
+    .desc-box {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loader-logo"><i class="fas fa-shield-halved"></i></div>
+    <div class="loader-text">Loading Vulnerability Details</div>
+    <div class="loader-bar"><div class="loader-progress"></div></div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar-portal">
+    <a href="index.html" class="navbar-brand">
+      <div class="navbar-logo"><i class="fas fa-shield-halved"></i></div>
+      <div class="navbar-title">
+        SecureOps Portal
+        <span>Vulnerability Management</span>
+      </div>
+    </a>
+    <div class="navbar-center"></div>
+    <div class="navbar-right">
+      <div class="nav-datetime">
+        <div class="nav-date" id="navDate"></div>
+        <div class="nav-time" id="navTime"></div>
+      </div>
+      <button class="nav-btn" id="themeToggle"><i class="fas fa-sun"></i></button>
+      <a href="index.html" class="nav-btn"><i class="fas fa-home"></i></a>
+      <div class="nav-avatar">PM</div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container-fluid-custom">
+
+      <!-- Breadcrumb -->
+      <div class="breadcrumb-portal animate-fade-up">
+        <a href="index.html"><i class="fas fa-home"></i> Dashboard</a>
+        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+        <a href="#" id="bcCategory" onclick="history.back();return false">Details</a>
+        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+        <span id="bcVulnId">Vulnerability</span>
+      </div>
+
+      <!-- Back button -->
+      <div class="mb-3 animate-fade-up">
+        <button class="btn-portal btn-ghost-portal" onclick="history.back()">
+          <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+      </div>
+
+      <!-- Header Card -->
+      <div class="glass-card detail-header-card animate-fade-up animate-delay-1" id="headerCard">
+        <div class="row align-items-start g-3">
+          <div class="col-auto">
+            <div class="cvss-ring medium" id="cvssRing">
+              <span class="score" id="cvssScore">—</span>
+              <span class="label">Score</span>
+            </div>
+          </div>
+          <div class="col">
+            <div class="detail-vuln-id" id="vulnId">VIT-XXXXXXXX</div>
+            <div class="detail-vuln-name" id="vulnName">Loading vulnerability details...</div>
+            <div class="detail-meta-row">
+              <span id="sevBadge" class="badge-severity medium"><i class="fas fa-circle" style="font-size:6px"></i> Medium</span>
+              <span id="statusBadge" class="badge-status on-track">Open</span>
+              <span id="slaBadge" class="badge-status">—</span>
+              <span class="tag" id="appTag"><i class="fas fa-code"></i> —</span>
+              <span class="tag" id="envTag"><i class="fas fa-cloud"></i> —</span>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="d-flex gap-2">
+              <button class="btn-portal btn-ghost-portal" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+              <button class="btn-portal btn-primary-portal" onclick="history.back()"><i class="fas fa-list"></i> Back to List</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Left column: Details -->
+        <div class="col-lg-8">
+
+          <!-- Asset Information -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-2">
+            <div class="detail-section-title"><i class="fas fa-server"></i> Asset Information</div>
+            <div class="detail-grid" id="assetGrid">
+              <div class="detail-item"><label>Application / Asset</label><div class="value" id="di-app">—</div></div>
+              <div class="detail-item"><label>Hostname / FQDN</label><div class="value" id="di-hostname">—</div></div>
+              <div class="detail-item"><label>IP Address</label><div class="value" id="di-ip">—</div></div>
+              <div class="detail-item"><label>Environment</label><div class="value" id="di-env">—</div></div>
+              <div class="detail-item"><label>Portfolio</label><div class="value" id="di-portfolio">—</div></div>
+              <div class="detail-item"><label>Category</label><div class="value" id="di-category">—</div></div>
+            </div>
+          </div>
+
+          <!-- Vulnerability Details -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-2">
+            <div class="detail-section-title"><i class="fas fa-bug"></i> Vulnerability Details</div>
+            <div class="detail-grid" style="margin-bottom:14px">
+              <div class="detail-item"><label>CVE / Vuln ID</label><div class="value" id="di-cve">—</div></div>
+              <div class="detail-item"><label>Risk Score</label><div class="value" id="di-score">—</div></div>
+              <div class="detail-item"><label>Severity</label><div class="value" id="di-severity">—</div></div>
+              <div class="detail-item"><label>Category</label><div class="value" id="di-cat2">—</div></div>
+              <div class="detail-item"><label>Assessment Tool</label><div class="value" id="di-tool">—</div></div>
+              <div class="detail-item"><label>First Found</label><div class="value" id="di-firstfound">—</div></div>
+            </div>
+            <div class="detail-item">
+              <label>Description / Summary</label>
+              <div class="desc-box" id="di-desc">—</div>
+            </div>
+          </div>
+
+          <!-- Remediation -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-3">
+            <div class="detail-section-title"><i class="fas fa-wrench"></i> Remediation & Recommendation</div>
+            <div class="detail-item" style="margin-bottom:12px">
+              <label>Recommendation</label>
+              <div class="desc-box" id="di-rec">—</div>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item"><label>Due Date</label><div class="value" id="di-duedate">—</div></div>
+              <div class="detail-item"><label>Days Remaining</label><div class="value" id="di-daysrem">—</div></div>
+              <div class="detail-item"><label>SLA Status</label><div class="value" id="di-slastatus">—</div></div>
+              <div class="detail-item"><label>Aging</label><div class="value" id="di-aging">—</div></div>
+            </div>
+          </div>
+
+        </div><!-- /col-lg-8 -->
+
+        <!-- Right column: Meta + Timeline -->
+        <div class="col-lg-4">
+
+          <!-- Dates -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-2">
+            <div class="detail-section-title"><i class="fas fa-calendar"></i> Dates & SLA</div>
+            <div class="d-flex flex-column gap-3">
+              <div class="detail-item"><label>Created / Detected</label><div class="value" id="di-created">—</div></div>
+              <div class="detail-item"><label>Due Date</label><div class="value" id="di-duedate2">—</div></div>
+              <div class="detail-item"><label>SLA Status</label><div class="value" id="di-sla2">—</div></div>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-3">
+            <div class="detail-section-title"><i class="fas fa-tags"></i> Tags & Classification</div>
+            <div class="tag-list" id="tagList">
+              <span class="tag">Loading...</span>
+            </div>
+          </div>
+
+          <!-- Activity Timeline -->
+          <div class="glass-card detail-section animate-fade-up animate-delay-4">
+            <div class="detail-section-title"><i class="fas fa-history"></i> Activity Timeline</div>
+            <div class="timeline" id="timeline">
+              <div class="timeline-item">
+                <div class="timeline-date">Loading...</div>
+                <div class="timeline-text">Vulnerability data loading</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /col-lg-4 -->
+      </div><!-- /row -->
+
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fabTop" title="Back to Top">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/sharepoint.js"></script>
+  <script>
+  /* ── Drill-down page logic ─────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', async () => {
+    const category = getParam('category') || 'application';
+    const id       = getParam('id') || '';
+
+    // Update breadcrumb
+    const bcCat = document.getElementById('bcCategory');
+    if (bcCat) {
+      bcCat.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+      bcCat.href = `details.html?category=${category}`;
+    }
+
+    // Try session storage first (fast path)
+    let rowData = null;
+    try {
+      const stored = sessionStorage.getItem('drilldownRow');
+      if (stored) rowData = JSON.parse(stored);
+    } catch(e) {}
+
+    // Fallback: load from data file
+    if (!rowData || rowData.id !== id) {
+      const data = await loadAllData();
+      const fm   = FieldMap[category];
+      const rows = data[category] || [];
+      const raw  = rows.find(r => String(fm.id(r)) === id) || rows[0];
+      if (raw) {
+        rowData = {};
+        Object.keys(fm).forEach(k => { try { rowData[k] = fm[k](raw); } catch(e) { rowData[k] = ''; } });
+        rowData._raw = raw;
+      }
+    }
+
+    if (!rowData) {
+      showToast('Vulnerability not found', 'error');
+      hideLoader();
+      return;
+    }
+
+    populateDrillDown(rowData, category);
+    hideLoader();
+  });
+
+  function populateDrillDown(row, category) {
+    const sev = normSeverity(row.severity || 'Medium');
+    const sevCls = getSeverityClass(sev);
+
+    // Breadcrumb ID
+    setText2('bcVulnId', row.id || 'Detail View');
+
+    // CVSS Ring
+    const ring = document.getElementById('cvssRing');
+    const score = parseFloat(row.score) || 0;
+    if (ring) {
+      ring.className = `cvss-ring ${sevCls}`;
+      setText2('cvssScore', score > 0 ? score.toFixed(1) : sev.charAt(0));
+    }
+
+    // Header
+    setText2('vulnId', row.id || '—');
+    setText2('vulnName', row.name || 'Unnamed Vulnerability');
+
+    const sevBadge = document.getElementById('sevBadge');
+    if (sevBadge) sevBadge.outerHTML = `<span class="badge-severity ${sevCls}" id="sevBadge"><i class="fas fa-circle" style="font-size:6px"></i> ${sev}</span>`;
+
+    const statusBadge = document.getElementById('statusBadge');
+    if (statusBadge) {
+      const stCls = getStatusClass(row.status || '');
+      statusBadge.className = `badge-status ${stCls}`;
+      statusBadge.textContent = row.status || 'Open';
+    }
+
+    const slaBadge = document.getElementById('slaBadge');
+    if (slaBadge) {
+      const slaCls = getStatusClass(row.slaStatus || '');
+      slaBadge.className = `badge-status ${slaCls}`;
+      slaBadge.textContent = row.slaStatus || '—';
+    }
+
+    setText2('appTag', row.app || category);
+    setText2('envTag', row.env || row._raw?.['cmdb_ci.environment'] || 'Production');
+
+    // Asset Info
+    setText2('di-app',       row.app || '—');
+    setText2('di-hostname',  row.hostname || '—');
+    setText2('di-ip',        row.ip || '—');
+    setText2('di-env',       row.env || '—');
+    setText2('di-portfolio', row.portfolio || row._raw?.['Application Portfolio'] || '—');
+    setText2('di-category',  row.category || row._raw?.['Category Name'] || '—');
+
+    // Vuln Details
+    setText2('di-cve',       row.cve || '—');
+    setText2('di-score',     score > 0 ? `${score} / 100` : '—');
+    setText2('di-severity',  sev);
+    setText2('di-cat2',      row.category || '—');
+    setText2('di-tool',      row.tool || row._raw?.['Assessment Tool'] || row._raw?.['source'] || '—');
+    setText2('di-firstfound', row.firstFound instanceof Date ? formatDate(row.firstFound) : '—');
+    setText2('di-desc',      row.desc || 'No description available.');
+    setText2('di-rec',       row.rec || 'Please refer to security advisory for remediation steps.');
+
+    // Remediation
+    setText2('di-duedate',   formatDate(row.dueDate));
+    setText2('di-duedate2',  formatDate(row.dueDate));
+    const days = daysUntil(row.dueDate);
+    setText2('di-daysrem',  days !== null ? `${days} days` : '—');
+    setText2('di-slastatus', row.slaStatus || '—');
+    setText2('di-aging',     row.aging || '—');
+
+    // Dates
+    setText2('di-created', row.created instanceof Date ? formatDate(row.created) : '—');
+    setText2('di-sla2',    row.slaStatus || '—');
+
+    // Tags
+    const tags = document.getElementById('tagList');
+    if (tags) {
+      const tagItems = [
+        sev, category,
+        row.portfolio || null,
+        row.env || null,
+        row.slaStatus || null,
+        score >= 70 ? 'High Risk' : score >= 40 ? 'Medium Risk' : 'Low Risk'
+      ].filter(Boolean);
+      tags.innerHTML = tagItems.map(t => `<span class="tag">${t}</span>`).join('');
+    }
+
+    // Timeline
+    const timeline = document.getElementById('timeline');
+    if (timeline) {
+      const events = [];
+      if (row.firstFound instanceof Date) events.push({ date: row.firstFound, text: 'Vulnerability first detected' });
+      if (row.created instanceof Date)    events.push({ date: row.created,    text: 'Record created in system' });
+      if (row.lastFound instanceof Date)  events.push({ date: row.lastFound,  text: 'Last confirmed active' });
+      if (row.dueDate instanceof Date)    events.push({ date: row.dueDate,    text: 'Remediation due date' });
+
+      events.sort((a, b) => a.date - b.date);
+
+      if (events.length === 0) {
+        timeline.innerHTML = '<div class="timeline-item"><div class="timeline-date">—</div><div class="timeline-text">No timeline data available</div></div>';
+      } else {
+        timeline.innerHTML = events.map(e => `
+          <div class="timeline-item">
+            <div class="timeline-date">${formatDate(e.date)}</div>
+            <div class="timeline-text">${e.text}</div>
+          </div>`).join('');
+      }
+    }
+  }
+
+  function setText2(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+  </script>
+</body>
+</html>
