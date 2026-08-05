@@ -31,6 +31,21 @@ async function initMSAL() {
 
   initPromise = (async () => {
     await waitForLib('msal');
+
+    // Clear any stuck MSAL interaction state before initializing
+    const keysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (
+        key.includes('msal') ||
+        key.includes('login') ||
+        key.includes('interaction')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => sessionStorage.removeItem(k));
+
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
 
     try {
